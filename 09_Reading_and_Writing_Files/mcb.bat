@@ -1,0 +1,1 @@
+@pyw.exe "C:\Users\TETFUND\OneDrive\User\PycharmProjects\pythonForAutomation II\mcb.pyw" %*

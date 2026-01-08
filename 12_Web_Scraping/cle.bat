@@ -1,0 +1,1 @@
+@py.exe "C:\Users\Abdulbadie\OneDrive\User\PycharmProjects\webScraping\commandLineEmailer.py" %*

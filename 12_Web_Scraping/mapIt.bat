@@ -1,0 +1,1 @@
+@py.exe "C:\Users\TETFUND\OneDrive\User\PycharmProjects\webScraping\mapIt.py" %*

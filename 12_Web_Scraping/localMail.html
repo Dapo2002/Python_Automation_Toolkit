@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Local Mail — Test App</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: Inter, system-ui, Arial; margin: 24px; background:#f7f9fc; color:#111 }
+    .card { background:white; border-radius:8px; padding:18px; box-shadow:0 6px 20px rgba(20,30,60,0.06); max-width:920px; margin:auto }
+    header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px }
+    nav button { margin-right:8px }
+    form label { display:block; margin:10px 0 }
+    input[type="text"], input[type="email"], input[type="password"], textarea { width:100%; padding:8px; border-radius:6px; border:1px solid #d6e0ef; font-size:14px }
+    .small { font-size:13px; color:#556 }
+    .status { margin-top:12px; color:green; white-space:pre-wrap }
+    .danger { color:#b00020 }
+    #inboxList, #sentList { margin-top:12px; }
+    .msg { padding:10px; border-radius:6px; background:#fbfdff; margin-bottom:8px; border:1px solid #eef6ff }
+  </style>
+</head>
+<body>
+  <div class="card" id="app">
+    <header>
+      <h2 id="appTitle">Local Mail — Test App</h2>
+      <div id="sessionArea" class="small"></div>
+    </header>
+
+    <nav id="topNav" style="display:none">
+      <button id="navInbox">Inbox</button>
+      <button id="navCompose">Compose</button>
+      <button id="navSent">Sent</button>
+      <button id="navLogout" style="float:right">Logout</button>
+    </nav>
+
+    <!-- LOGIN VIEW -->
+    <section id="viewLogin">
+      <h3>Sign in (test accounts)</h3>
+      <p class="small">Use one of the test accounts below to simulate logging in.</p>
+
+      <div style="display:flex; gap:12px; align-items:flex-start">
+        <form id="loginForm" style="flex:1" onsubmit="return doLogin()">
+          <label> Email
+            <input id="loginEmail" type="email" placeholder="user@example.com" required>
+          </label>
+          <label> Password
+            <input id="loginPassword" type="password" placeholder="password" required>
+          </label>
+          <button id="loginBtn" type="submit">Sign in</button>
+          <div id="loginStatus" class="status" style="color:#b00020"></div>
+        </form>
+
+        <div style="width:260px">
+          <strong>Test accounts</strong>
+          <ul class="small">
+            <li><code>alice@test.local</code> / <code>alice123</code></li>
+            <li><code>bob@test.local</code> / <code>bob123</code></li>
+          </ul>
+          <p class="small">This is a simulated login. No real network calls.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMPOSE VIEW -->
+    <section id="viewCompose" style="display:none">
+      <h3>Compose</h3>
+      <form id="composeForm" onsubmit="return sendMessage()">
+        <label>To
+          <input id="to" type="email" required placeholder="recipient@example.com">
+        </label>
+        <label>Subject
+          <input id="subject" type="text" placeholder="Subject">
+        </label>
+        <label>Body
+          <textarea id="body" rows="8" placeholder="Write your message here..."></textarea>
+        </label>
+        <button id="sendBtn" type="submit">Send</button>
+        <div id="composeStatus" class="status"></div>
+      </form>
+    </section>
+
+    <!-- INBOX VIEW -->
+    <section id="viewInbox" style="display:none">
+      <h3>Inbox</h3>
+      <div id="inboxList" class="small">No messages.</div>
+    </section>
+
+    <!-- SENT VIEW -->
+    <section id="viewSent" style="display:none">
+      <h3>Sent</h3>
+      <div id="sentList" class="small">No sent messages.</div>
+    </section>
+
+    <hr style="margin-top:18px"/>
+
+    <footer class="small" style="text-align:center">Local Mail — demo app for Selenium practice</footer>
+  </div>
+
+<script>
+(function(){
+  // Simulated users (credentials stored here for the demo only)
+  const USERS = {
+    "alice@test.local": { password: "alice123", name: "Alice" },
+    "bob@test.local":   { password: "bob123",   name: "Bob" }
+  };
+
+  // Helpers
+  const $ = id => document.getElementById(id);
+  const show = (id) => { ["viewLogin","viewCompose","viewInbox","viewSent"].forEach(v=>$(v).style.display="none"); $(id).style.display="block"; }
+  const nowISO = () => new Date().toISOString();
+
+  // Persisted storage keys
+  const KEY_SESSION = "localmail_session";    // JSON { email, name }
+  const KEY_INBOX = "localmail_inbox";        // { email: [msg,...] }
+  const KEY_SENT  = "localmail_sent";         // { email: [msg,...] }
+
+  function readJSON(k, fallback) {
+    try { return JSON.parse(localStorage.getItem(k)) || fallback; } catch(e) { return fallback; }
+  }
+  function writeJSON(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+
+  // Initialize store
+  const inboxStore = readJSON(KEY_INBOX, {});
+  const sentStore  = readJSON(KEY_SENT,  {});
+
+  // UI elements
+  const sessionArea = $("sessionArea");
+  const nav = $("topNav");
+
+  function updateNav() {
+    const session = getSession();
+    if (session) {
+      nav.style.display = "block";
+      sessionArea.textContent = session.name + " — " + session.email;
+    } else {
+      nav.style.display = "none";
+      sessionArea.textContent = "";
+    }
+  }
+
+  // Session helpers
+  function getSession() {
+    return readJSON(KEY_SESSION, null);
+  }
+  function setSession(obj) {
+    writeJSON(KEY_SESSION, obj);
+    updateNav();
+  }
+  function clearSession() {
+    localStorage.removeItem(KEY_SESSION);
+    updateNav();
+  }
+
+  // Login logic
+  window.doLogin = function() {
+    const email = $("loginEmail").value.trim();
+    const pwd = $("loginPassword").value;
+    const status = $("loginStatus");
+    status.textContent = "";
+    if (!USERS[email] || USERS[email].password !== pwd) {
+      status.textContent = "Incorrect email or password (use test accounts).";
+      return false;
+    }
+    // Create a simple session object
+    setSession({ email, name: USERS[email].name, loggedAt: nowISO() });
+    // Ensure store arrays exist
+    inboxStore[email] = inboxStore[email] || [];
+    sentStore[email]  = sentStore[email] || [];
+    writeJSON(KEY_INBOX, inboxStore);
+    writeJSON(KEY_SENT, sentStore);
+
+    status.style.color = "green";
+    status.textContent = "Signed in as " + USERS[email].name;
+    // show compose by default
+    show("viewInbox");
+    renderInbox();
+    return false; // prevent native submit
+  };
+
+  // Logout
+  $("navLogout").addEventListener("click", () => {
+    clearSession();
+    show("viewLogin");
+    $("loginStatus").textContent = "Signed out.";
+  });
+
+  // Nav
+  $("navCompose").addEventListener("click", () => { show("viewCompose"); $("composeStatus").textContent=""; });
+  $("navInbox").addEventListener("click", () => { show("viewInbox"); renderInbox(); });
+  $("navSent").addEventListener("click", () => { show("viewSent"); renderSent(); });
+
+  // Compose / send
+  window.sendMessage = function() {
+    const session = getSession();
+    if (!session) {
+      $("composeStatus").textContent = "You must be signed in to send messages.";
+      $("composeStatus").classList.add("danger");
+      return false;
+    }
+    const to = $("to").value.trim();
+    const subject = $("subject").value.trim() || "(no subject)";
+    const body = $("body").value.trim();
+    if (!to) {
+      $("composeStatus").textContent = "Recipient required.";
+      return false;
+    }
+
+    const msg = {
+      id: 'm-' + Math.random().toString(36).slice(2,10),
+      from: session.email,
+      to,
+      subject,
+      body,
+      ts: nowISO()
+    };
+
+    // Put into sender's Sent
+    sentStore[session.email] = sentStore[session.email] || [];
+    sentStore[session.email].unshift(msg);
+
+    // Put into recipient's Inbox (simulate)
+    inboxStore[to] = inboxStore[to] || [];
+    inboxStore[to].unshift(msg);
+
+    writeJSON(KEY_SENT, sentStore);
+    writeJSON(KEY_INBOX, inboxStore);
+
+    $("composeStatus").style.color = "green";
+    $("composeStatus").textContent = "Message sent (simulated) to: " + to;
+    // Clear fields to simulate UX
+    $("to").value = ""; $("subject").value = ""; $("body").value = "";
+    return false;
+  };
+
+  // Render functions
+  function renderInbox() {
+    const session = getSession();
+    const el = $("inboxList");
+    if (!session) { el.innerHTML = "<span class='small'>Sign in to view inbox.</span>"; return; }
+    const list = inboxStore[session.email] || [];
+    if (!list.length) { el.innerHTML = "<em class='small'>No messages in inbox</em>"; return; }
+    el.innerHTML = "";
+    list.forEach(m => {
+      const d = document.createElement("div");
+      d.className = "msg";
+      d.innerHTML = `<strong>From:</strong> ${m.from} &nbsp; <small class="small">${m.ts}</small>
+                     <div><strong>${m.subject}</strong></div>
+                     <div style="margin-top:6px">${escapeHtml(m.body)}</div>`;
+      el.appendChild(d);
+    });
+  }
+
+  function renderSent() {
+    const session = getSession();
+    const el = $("sentList");
+    if (!session) { el.innerHTML = "<span class='small'>Sign in to view Sent.</span>"; return; }
+    const list = sentStore[session.email] || [];
+    if (!list.length) { el.innerHTML = "<em class='small'>No sent messages</em>"; return; }
+    el.innerHTML = "";
+    list.forEach(m => {
+      const d = document.createElement("div");
+      d.className = "msg";
+      d.innerHTML = `<strong>To:</strong> ${m.to} &nbsp; <small class="small">${m.ts}</small>
+                     <div><strong>${m.subject}</strong></div>
+                     <div style="margin-top:6px">${escapeHtml(m.body)}</div>`;
+      el.appendChild(d);
+    });
+  }
+
+  // sanitize minimal
+  function escapeHtml(s) {
+    if (!s) return "";
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br/>");
+  }
+
+  // On load: check session
+  if (getSession()) {
+    updateNav();
+    show("viewInbox");
+    renderInbox();
+  } else {
+    updateNav();
+    show("viewLogin");
+  }
+
+  // Expose some testing helpers on window for Selenium convenience
+  window._TEST_HELPERS = {
+    clearStores: function() { localStorage.removeItem(KEY_INBOX); localStorage.removeItem(KEY_SENT); localStorage.removeItem(KEY_SESSION); location.reload(); },
+    addInboxMessage: function(forEmail, fromEmail, subject, body) {
+      inboxStore[forEmail] = inboxStore[forEmail] || [];
+      inboxStore[forEmail].unshift({ id:'x-'+Math.random(), from: fromEmail, to: forEmail, subject, body, ts: nowISO() });
+      writeJSON(KEY_INBOX, inboxStore);
+    },
+    listStores: function(){ return { inbox: readJSON(KEY_INBOX,{}), sent: readJSON(KEY_SENT,{}) }; }
+  };
+
+})();
+</script>
+</body>
+</html>
