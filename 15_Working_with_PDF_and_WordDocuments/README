@@ -1,0 +1,34 @@
+ Chapter 15: PDF & Word Document Automation
+
+This module focuses on the programmatic manipulation of binary document formats. It demonstrates the ability to automate security protocols, perform recursive file operations, and generate stylized business documents at scale.
+
+ 🚀 Key Features
+
+ 🔐 PDF Paranoia (Security Suite)
+- Recursive Encryption: Traverses directory trees to find and password-protect PDFs.
+- Integrity Verification: Uses a "verify-before-delete" protocol, ensuring encrypted copies are functional before removing unencrypted sources.
+- Batch Decryption: A recursive tool to restore access to all encrypted files within a folder structure.
+
+ 🔨 Brute-Force Password Cracker
+- Dictionary Attack: Implements a dictionary-based attack against PDF encryption.
+- Heuristic Variations: Automatically tests over 88,000 combinations, including case-insensitive variations (Uppercase/Lowercase).
+- Optimized Logic: Features immediate exit upon successful decryption to conserve CPU cycles.
+
+ ✉️ Custom Invitation Generator
+- Mail Merge Automation: Reads guest lists from external `.txt` files to generate personalized Word documents.
+- Dynamic Styling: Applies custom Word styles and programmatic page breaks (`WD_BREAK.PAGE`) to ensure print-readiness.
+
+ 🛠️ Requirements & Stack
+- Python 3.x
+- PyPDF2: For PDF encryption, decryption, and metadata handling.
+- python-docx: For manipulating the Document Object Model (DOM) of `.docx` files.
+- File I/O: For processing dictionary files and guest lists.
+
+ 📁 Repository Structure
+- `PDFParanoia.py`: The main encryption/decryption engine.
+- `bruteForcePDF.py`: The dictionary-based attack script.
+- `customInvitations.py`: The Word document generator.
+- `dictionary.txt`: The reference wordlist for security testing.
+
+---
+Developed as part of the Automate the Boring Stuff curriculum.
