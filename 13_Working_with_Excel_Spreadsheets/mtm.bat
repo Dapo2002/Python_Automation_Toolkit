@@ -1,0 +1,1 @@
+@py.exe "C:\Users\User\OneDrive\User\PycharmProjects\workingWithExcelSpreadsheets\multiplicationTableMaker.py" %*

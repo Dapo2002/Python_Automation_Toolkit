@@ -1,0 +1,15 @@
+.
+ The program would find these occurrences and prompt the user to
+ replace them.
+ Enter an adjective:
+ silly
+ Enter a noun:
+ chandelier
+ Enter a verb:
+ screamed
+ Enter a noun:
+ pickup truck
+ The following text file would then be created:
+ The silly panda walked to the chandelier and then screamed. A nearby pickup
+ truck was unaffected by these events. these
+ The results should be printed

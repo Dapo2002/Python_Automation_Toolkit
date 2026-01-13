@@ -1,0 +1,6 @@
+ 2025-09-28 10:17:51,855 WARNING -  An error message is about to be logged.
+ 2025-09-28 10:17:51,856 ERROR -  An error has occurred.
+ 2025-09-28 10:17:51,856 CRITICAL -  The program is unable to recover!
+ 2025-09-28 10:18:30,992 WARNING -  An error message is about to be logged.
+ 2025-09-28 10:18:30,992 ERROR -  An error has occurred.
+ 2025-09-28 10:18:30,992 CRITICAL -  The program is unable to recover!
