@@ -31,3 +31,4 @@ def get_address_from_coords(lat, lon, api_key):
 # Usage
 result = get_address_from_coords(6.6778, 3.1654, 'YOUR_API_KEY_HERE')
 print(result)
+
