@@ -1,3 +1,6 @@
+# Creates custom 288x360 name cards with a red background, black border,
+# flower graphic, and gold-centered text for each guest listed in 'guests.txt'.
+
 from PIL import Image, ImageDraw, ImageFont
 import os
 
